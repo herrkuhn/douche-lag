@@ -66,6 +66,8 @@ int main() {
   disp.external_vcc = false;
   ssd1306_init( &disp, 128, 64, 0x3C, i2c0 );
   ssd1306_clear( &disp );
+  ssd1306_draw_string( &disp, 0, 0, 1, "Waiting..." );
+  ssd1306_show( &disp );
   
   // For GBA, set the output register value to low.
   gpio_put( PAD1, 0 );
