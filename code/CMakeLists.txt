@@ -27,4 +27,4 @@ pico_add_extra_outputs(${PROJECT})
 
 target_sources(${PROJECT} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/main.c ${CMAKE_CURRENT_SOURCE_DIR}/ssd1306.c ${CMAKE_CURRENT_SOURCE_DIR}/measure.c ${CMAKE_CURRENT_SOURCE_DIR}/output.c)
 
-target_link_libraries(${PROJECT} pico_stdlib hardware_i2c)
+target_link_libraries(${PROJECT} pico_stdlib hardware_i2c pico_multicore)
