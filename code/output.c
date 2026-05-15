@@ -7,11 +7,18 @@
  * output is confined here.
  */
 #include "output.h"
+#include "debug.h"
 #include "ssd1306.h"
 #include "hardware/i2c.h"
 #include "pico/stdlib.h"
 #include <stdio.h>
 #include <string.h>
+
+static void dbg_emit(uint32_t level, uint32_t id, uint32_t param) {
+    static const char *level_names[] = {"ERROR", "WARN", "INFO", "DEBUG"};
+    const char *msg = (id < MSG_COUNT) ? log_msg_table[id] : "unknown message";
+    printf("[%s] %s (param=%lu)\n", level_names[level], msg, (unsigned long)param);
+}
 
 /* Module-level display handle. Allocated here so I2C0 ownership is
  * explicit: no other module touches i2c0 or the SSD1306 instance.
@@ -69,8 +76,7 @@ void output_init(void) {
  * directly as measure_run's callback.
  */
 void output_record_measurement(uint32_t lag_us) {
-    printf("Got change!\n");
-
+    DBG_DEBUG(MSG_MEASURE_LAG_REPORTED, lag_us);
     lagVals[curMeasurement] = lag_us;
     ++curMeasurement;
     ++totalMeasurements;
@@ -119,4 +125,11 @@ void output_record_measurement(uint32_t lag_us) {
     sprintf(textout, "Min Lag: %f ms", minLag_f);
     ssd1306_draw_string(&disp, 0, 32, 1, textout);
     ssd1306_show(&disp);
+}
+
+/* Decodes a debug word and prints it to serial.
+ * OLED is not updated: adding a refresh here disrupts the running lag display.
+ * Call only from core 1 — printf is not safe across cores without locking. */
+void output_debug_message(uint32_t word) {
+    dbg_emit(DBG_LEVEL(word), DBG_MSG_ID(word), DBG_PARAM(word));
 }

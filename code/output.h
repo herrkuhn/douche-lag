@@ -18,5 +18,8 @@ void output_init(void);
  * redraws the OLED. Also prints to USB CDC. Safe to call only from the
  * output owner (core 1 in dual-core mode). */
 void output_record_measurement(uint32_t lag_us);
+/* Decodes a debug word (encoded by debug.h macros) and prints it to serial.
+ * OLED is not updated. Call only from core 1. */
+void output_debug_message(uint32_t word);
 
 #endif /* _OUTPUT_H */

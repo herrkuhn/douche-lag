@@ -8,12 +8,13 @@
  * Init order:
  *   core 0: stdio_init_all -> multicore_launch_core1(core1_entry)
  *   core 1: output_init -> push sentinel 0 on core1->core0 FIFO
- *   core 0: pop sentinel -> measure_init_gpio -> measure_run(fifo_push_callback)
+ *   core 0: pop sentinel -> measure_init_gpio -> measure_run(fifo_push_callback, debug_fifo_push)
  */
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "config.h"
+#include "debug.h"
 #include "measure.h"
 #include "output.h"
 
@@ -23,6 +24,13 @@
  * on timeout is acceptable at 2 Hz with an 8-deep hardware FIFO. */
 static void fifo_push_callback(uint32_t lag_us) {
     multicore_fifo_push_timeout_us(lag_us, 100000);
+}
+
+/* Passes an encoded debug word to core 1.
+ * 0us timeout: drops immediately if FIFO is full rather than stalling core 0.
+ * Return value ignored by design — debug messages are lower priority than measurements. */
+static void debug_fifo_push(uint32_t encoded) {
+    multicore_fifo_push_timeout_us(encoded, 0);
 }
 
 /* Core 1 entry point: initializes I2C/OLED, signals readiness, then consumes
@@ -43,8 +51,13 @@ static void core1_entry(void) {
     output_init();
     multicore_fifo_push_blocking(0);
     while (1) {
-        uint32_t lag_us = multicore_fifo_pop_blocking();
-        output_record_measurement(lag_us);
+        uint32_t word = multicore_fifo_pop_blocking();
+        /* Bit 31 distinguishes debug words from measurements. */
+        if (DBG_IS_DEBUG(word)) {
+            output_debug_message(word);
+        } else {
+            output_record_measurement(word);
+        }
     }
 }
 
@@ -57,6 +70,8 @@ int main(void) {
     multicore_launch_core1(core1_entry);
     multicore_fifo_pop_blocking();   /* block until core 1 signals output_init done */
     measure_init_gpio();
-    measure_run(fifo_push_callback);
+    /* debug_fifo_push wraps multicore_fifo_push_timeout_us with 0us timeout; passed
+     * as the debug callback so measure.c has no direct FIFO dependency. */
+    measure_run(fifo_push_callback, debug_fifo_push);
     return 0;
 }
