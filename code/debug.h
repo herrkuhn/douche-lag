@@ -63,6 +63,8 @@ typedef enum {
     MSG_MEASURE_LAG_REPORTED,
     MSG_MEASURE_PRESS_SCHEDULED,
     MSG_MEASURE_TOGGLE_RELEASED,
+    MSG_MEASURE_IRQ_ARMED,
+    MSG_MEASURE_IRQ_FIRED,
     MSG_OUTPUT_INIT_DONE,
     MSG_COUNT
 } debug_msg_id;
@@ -74,6 +76,8 @@ static const char *log_msg_table[MSG_COUNT] = {
     [MSG_MEASURE_LAG_REPORTED]   = "lag reported",
     [MSG_MEASURE_PRESS_SCHEDULED]= "press scheduled",
     [MSG_MEASURE_TOGGLE_RELEASED]= "toggle released",
+    [MSG_MEASURE_IRQ_ARMED]      = "irq armed",
+    [MSG_MEASURE_IRQ_FIRED]      = "irq fired",
     [MSG_OUTPUT_INIT_DONE]       = "output_init done"
 };
 
