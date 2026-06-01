@@ -13,6 +13,8 @@
 static void (*debug_push_fn)(uint32_t);
 static volatile uint64_t button_press_time;
 static volatile uint32_t captured_lag;
+/* Frozen in the same ISR invocation as captured_lag; pair is self-consistent. */
+static volatile uint32_t captured_ts_ms;
 static volatile uint32_t measurement_done;
 static measure_callback_t on_meas_cb;
 
@@ -25,6 +27,8 @@ static void lightsense_isr(uint gpio, uint32_t events) {
     (void)gpio; (void)events;
     uint64_t edgeTime = time_us_64();
     captured_lag = (uint32_t)(edgeTime - button_press_time);
+    /* button_press_time is overwritten by the next scheduled press; capture here or skew. */
+    captured_ts_ms = (uint32_t)(button_press_time / 1000);
     gpio_set_irq_enabled(LIGHTSENSE, GPIO_IRQ_EDGE_FALL, false);
     measurement_done = 1;
 }
@@ -80,7 +84,7 @@ void measure_run(measure_callback_t on_measurement, void (*debug_push)(uint32_t)
         if (measurement_done) {
             measurement_done = 0;
             irqArmed = 0;
-            on_meas_cb(captured_lag);
+            on_meas_cb(captured_ts_ms, captured_lag);  /* both values frozen in ISR */
             DBG_DEBUG(MSG_MEASURE_IRQ_FIRED, captured_lag >> 10);
         }
 

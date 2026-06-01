@@ -5,7 +5,8 @@
 #include "config.h"
 #include "pico/stdlib.h"
 
-typedef void (*measure_callback_t)(uint32_t lag_us);
+/* ts_ms: button_press_time/1000 frozen in ISR alongside lag_us. */
+typedef void (*measure_callback_t)(uint32_t ts_ms, uint32_t lag_us);
 
 void measure_init_gpio(void);
 void measure_run(measure_callback_t on_measurement, void (*debug_push)(uint32_t));

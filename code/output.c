@@ -31,11 +31,20 @@ void output_init(void) {
     ssd1306_clear(&disp);
     ssd1306_draw_string(&disp, 0, 0, 1, "Waiting...");
     ssd1306_show(&disp);
+    printf("t_ms,lag_us\n");
 }
 
-/* Stats kept here (not measure.c) so only a 32-bit lag_us crosses the FIFO. */
-void output_record_measurement(uint32_t lag_us) {
+/* Updates rolling OLED stats and emits one CSV line per measurement.
+ * Stats kept here so only decoded values cross the FIFO.
+ * Debug builds with LOG_LEVEL>=2 interleave [LEVEL] lines with CSV;
+ * use a Release build or -DLOG_LEVEL=0 for a clean stream. */
+void output_record_measurement(uint32_t ts_ms, uint32_t lag_us) {
     DBG_DEBUG(MSG_MEASURE_LAG_REPORTED, lag_us);
+    /* printf fans out to USB-CDC and UART backends enabled unconditionally.
+     * Unbuffered per-measurement emission is safe: at ~2 Hz one ~12-char line costs ~1 ms at
+     * UART 115200 baud, well inside core 1's ~500 ms inter-measurement budget, so it never
+     * back-pressures core 0 timing. */
+    printf("%lu,%lu\n", (unsigned long)ts_ms, (unsigned long)lag_us);
     lagVals[curMeasurement] = lag_us;
     ++curMeasurement;
     ++totalMeasurements;

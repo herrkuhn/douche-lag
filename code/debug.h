@@ -19,6 +19,18 @@ enum {
 /* Bit 31 distinguishes debug words from measurements in the shared FIFO.
  * Layout: [31]=debug [30:29]=level [28:21]=msg_id [20:0]=param */
 #define DBG_FLAG_BIT (1u << 31)
+
+/* Measurement word sub-tags (bit 31 clear):
+ *   bit30=1  timestamp word  [29:0]=ms since boot (~12.4-day wrap; safe for sessions)
+ *   bit30=0  lag word        [29:0]=microseconds  (<= ~500ms measurement window)
+ * Core 1 classifies each word independently, enabling self-healing on
+ * dropped or interleaved words. */
+#define MEAS_TS_BIT (1u << 30)
+#define MEAS_ENCODE_TS(ms_val)  (MEAS_TS_BIT | ((uint32_t)(ms_val) & 0x3FFFFFFFu))
+#define MEAS_ENCODE_LAG(us_val) ((uint32_t)(us_val) & 0x3FFFFFFFu)
+#define MEAS_IS_TS(word)        (((uint32_t)(word) & (DBG_FLAG_BIT | MEAS_TS_BIT)) == MEAS_TS_BIT)
+#define MEAS_PAYLOAD(word)      ((uint32_t)(word) & 0x3FFFFFFFu)
+
 #define DBG_ENCODE(level, id, param) \
     (DBG_FLAG_BIT | (((uint32_t)(level) & 0x3u) << 29) | (((uint32_t)(id) & 0xFFu) << 21) | ((uint32_t)(param) & 0x1FFFFFu))
 
