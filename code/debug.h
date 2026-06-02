@@ -57,6 +57,20 @@ typedef enum {
     MSG_MEASURE_IRQ_ARMED,
     MSG_MEASURE_IRQ_FIRED,
     MSG_OUTPUT_INIT_DONE,
+    /* CRT-path diagnostics.
+     * SENSOR_STUCK_LOW fires at WARN when LIGHTSENSE is low at arm time
+     * (ambient saturation or residual CRT glow). EDGE_REJECTED fires at WARN
+     * when the ISR discards an out-of-window edge. Both are silent in the
+     * default LOG_LEVEL=0 release build; build with -DLOG_LEVEL=1 to observe. */
+    MSG_MEASURE_SENSOR_STUCK_LOW,
+    MSG_MEASURE_EDGE_REJECTED,
+    /* Emitted at WARN when the baseline observation window found LIGHTSENSE high
+     * (lit) during the black half; arming is skipped for this cycle to avoid
+     * measuring a CRT refresh pulse instead of the true press response. */
+    MSG_MEASURE_BASELINE_NOT_DARK,
+    /* Emitted at DEBUG when the derived curScreen differs from the dead-reckon prediction;
+     * indicates closed-loop phase resync engaged. Observe with -DLOG_LEVEL=3. */
+    MSG_MEASURE_PHASE_RESYNC,
     MSG_COUNT
 } debug_msg_id;
 
@@ -68,7 +82,11 @@ static const char *log_msg_table[MSG_COUNT] = {
     [MSG_MEASURE_TOGGLE_RELEASED]= "toggle released",
     [MSG_MEASURE_IRQ_ARMED]      = "irq armed",
     [MSG_MEASURE_IRQ_FIRED]      = "irq fired",
-    [MSG_OUTPUT_INIT_DONE]       = "output_init done"
+    [MSG_OUTPUT_INIT_DONE]       = "output_init done",
+    [MSG_MEASURE_SENSOR_STUCK_LOW] = "sensor low at arm (ambient/residual)",
+    [MSG_MEASURE_EDGE_REJECTED]    = "edge rejected (out of window)",
+    [MSG_MEASURE_BASELINE_NOT_DARK] = "baseline lit: abstaining (CRT refresh guard)",
+    [MSG_MEASURE_PHASE_RESYNC]     = "phase resync (curScreen corrected from sensor)"
 };
 
 #endif /* _DEBUG_H */
